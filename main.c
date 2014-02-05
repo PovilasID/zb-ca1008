@@ -43,18 +43,22 @@
 #include "ble_debug_assert_handler.h"
 #include "pstorage.h"
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "twi_master.h"
+#include "nrf_delay.h"
+#include "nrf_gpio.h"
 
 
-//PINOUT REF TO ZB-EX10091X-X1405-oled-accel-gyro-chrg
+///////////////////////////////////////////////PINOUT REF TO ZB-EX10091X-X1405-oled-accel-gyro-chrg
 #define YBUTTON_1		25//WAKE UP BUTTON
 #define YBUTTON_2		27//DELETE BLUETOOTH BONDS ON RESET
-#define YBUTTON_3		29//
-#define YBUTTON_4		88
+#define YBUTTON_3		29//Undefined
+#define YBUTTON_4		30///TEMP
 
-#define YLED_ADVERT       1///TEMP
+#define YLED_ADVERT     1///TEMP
 #define YLED_CONN       3///TEMP
-#define YLED_ASSERT       5///TEMP
+#define YLED_ASSERT     5///TEMP
 
 #define YACCEL_DEN_G		0
 #define YACCEL_DRDY_G		2
@@ -63,12 +67,12 @@
 
 #define YLCD_RESET       11
 
-#define YBAT_STATUS       23
+#define YBAT_STATUS      23
 
 #define I2C_SDA		14U
 #define I2C_SCL		12U
-//PINOUT-END
-//
+///////////////////////////////////////////////PINOUT-END
+
 
 #define DEVICE_NAME                          "ZEBE-10091"                               /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME                    "COOLDUDES"                      /**< Manufacturer. Will be passed to Device Information Service. */
@@ -136,6 +140,262 @@ static app_timer_id_t                        m_battery_timer_id;                
 static app_timer_id_t                        m_heart_rate_timer_id;                     /**< Heart rate measurement timer. */
 static app_timer_id_t                        m_rr_interval_timer_id;                    /**< RR interval timer. */
 static app_timer_id_t                        m_sensor_contact_timer_id;                 /**< Sensor contact detected timer. */
+
+
+
+//////////////////i2c-start
+
+
+
+
+
+/* Max cycles approximately to wait on RXDREADY and TXDREADY event, this is optimum way instead of using timers, this is not power aware, negetive side is this is not power aware */
+#define MAX_TIMEOUT_LOOPS             (10000UL)        /*!< MAX while loops to wait for RXD/TXD event */
+
+static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
+{
+    uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for EVENTS_TXDSENT event*/
+
+    if (data_length == 0)
+    {
+        /* gently return false for requesting data of size 0 */
+        return false;
+    }
+
+    NRF_TWI1->TXD = *data++;
+    NRF_TWI1->TASKS_STARTTX = 1;
+
+    while (true)
+    {
+        while(NRF_TWI1->EVENTS_TXDSENT == 0 && (--timeout))
+        {
+        }
+
+        if (timeout == 0)
+        {
+            NRF_TWI1->EVENTS_STOPPED = 0; 
+            NRF_TWI1->TASKS_STOP = 1; 
+            /* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+            while(NRF_TWI1->EVENTS_STOPPED == 0) 
+            { 
+            }
+            /* timeout before receiving event*/
+            return false;
+        }
+
+        NRF_TWI1->EVENTS_TXDSENT = 0;
+        if (--data_length == 0)
+        {
+            break;
+        }
+
+        NRF_TWI1->TXD = *data++;
+    }
+    
+    if (issue_stop_condition) 
+    { 
+        NRF_TWI1->EVENTS_STOPPED = 0; 
+        NRF_TWI1->TASKS_STOP = 1; 
+        /* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+        while(NRF_TWI1->EVENTS_STOPPED == 0) 
+        { 
+        } 
+    }
+
+    return true;
+}
+
+static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
+{
+    uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for RXDREADY event*/
+
+    if(data_length == 0)
+    {
+        /* gently return false for requesting data of size 0 */
+        return false;
+    }
+
+
+    if (data_length == 1)
+    {
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+    }
+    else
+    {
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+    }
+    NRF_PPI->CHENSET = PPI_CHENSET_CH0_Msk;
+    NRF_TWI1->TASKS_STARTRX = 1;
+    while(true)
+    {
+        while((NRF_TWI1->EVENTS_RXDREADY == 0) && (--timeout))
+        {
+        }
+
+        if(timeout == 0)
+        {
+            /* timeout before receiving event*/
+            return false;
+        }
+
+        NRF_TWI1->EVENTS_RXDREADY = 0;
+        *data++ = NRF_TWI1->RXD;
+
+        /* configure PPI to stop TWI master before we get last BB event */
+        if (--data_length == 1)
+        {
+            NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+        }
+
+        if (data_length == 0)
+            break;
+
+        NRF_TWI1->TASKS_RESUME = 1;
+    }
+
+    /* wait until stop sequence is sent and clear the EVENTS_STOPPED */
+    while(NRF_TWI1->EVENTS_STOPPED == 0)
+    {
+    }
+    NRF_TWI1->EVENTS_STOPPED = 0;
+
+    NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
+    return true;
+}
+
+/**
+ * Detects stuck slaves (SDA = 0 and SCL = 1) and tries to clear the bus.
+ *
+ * @return
+ * @retval false Bus is stuck.
+ * @retval true Bus is clear.
+ */
+static bool twi_master_clear_bus(void)
+{
+    uint32_t twi_state;
+    bool bus_clear;
+    uint32_t clk_pin_config;
+    uint32_t data_pin_config;
+        
+    // Save and disable TWI hardware so software can take control over the pins
+    twi_state = NRF_TWI1->ENABLE;
+    NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Disabled << TWI_ENABLE_ENABLE_Pos;
+
+    clk_pin_config = NRF_GPIO->PIN_CNF[I2C_SCL];
+    NRF_GPIO->PIN_CNF[I2C_SCL] = 
+        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos)
+      | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)
+      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos)
+      | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);    
+
+    data_pin_config = NRF_GPIO->PIN_CNF[I2C_SDA];
+    NRF_GPIO->PIN_CNF[I2C_SDA] = 
+        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos)
+      | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)
+      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos)
+      | (GPIO_PIN_CNF_DIR_Output     << GPIO_PIN_CNF_DIR_Pos);    
+      
+    TWI_SDA_HIGH();
+    TWI_SCL_HIGH();
+    TWI_DELAY();
+
+    if (TWI_SDA_READ() == 1 && TWI_SCL_READ() == 1)
+    {
+        bus_clear = true;
+    }
+    else
+    {
+        uint_fast8_t i;
+        bus_clear = false;
+
+        // Clock max 18 pulses worst case scenario(9 for master to send the rest of command and 9 for slave to respond) to SCL line and wait for SDA come high
+        for (i=18; i--;)
+        {
+            TWI_SCL_LOW();
+            TWI_DELAY();
+            TWI_SCL_HIGH();
+            TWI_DELAY();
+
+            if (TWI_SDA_READ() == 1)
+            {
+                bus_clear = true;
+                break;
+            }
+        }
+    }
+    
+    NRF_GPIO->PIN_CNF[I2C_SCL] = clk_pin_config;
+    NRF_GPIO->PIN_CNF[I2C_SDA] = data_pin_config;
+
+    NRF_TWI1->ENABLE = twi_state;
+
+    return bus_clear;
+}
+
+bool twi_master_init(void)
+{
+    /* To secure correct signal levels on the pins used by the TWI
+       master when the system is in OFF mode, and when the TWI master is 
+       disabled, these pins must be configured in the GPIO peripheral.
+    */
+    NRF_GPIO->PIN_CNF[I2C_SCL] = 
+        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos)
+      | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)
+      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos)
+      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);    
+
+    NRF_GPIO->PIN_CNF[I2C_SDA] = 
+        (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+      | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos)
+      | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)
+      | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos)
+      | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos);    
+
+    NRF_TWI1->EVENTS_RXDREADY = 0;
+    NRF_TWI1->EVENTS_TXDSENT = 0;
+    NRF_TWI1->PSELSCL = I2C_SCL;
+    NRF_TWI1->PSELSDA = I2C_SDA;
+    NRF_TWI1->FREQUENCY = TWI_FREQUENCY_FREQUENCY_K100 << TWI_FREQUENCY_FREQUENCY_Pos;
+    NRF_PPI->CH[0].EEP = (uint32_t)&NRF_TWI1->EVENTS_BB;
+    NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+    NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
+    NRF_TWI1->ENABLE = TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos;
+
+    return twi_master_clear_bus();
+}
+
+bool twi_master_transfer(uint8_t address, uint8_t *data, uint8_t data_length, bool issue_stop_condition)
+{
+    bool transfer_succeeded = true;
+    if (data_length > 0 && twi_master_clear_bus())
+    {
+        NRF_TWI1->ADDRESS = (address >> 1);
+
+        if ((address & TWI_READ_BIT))
+        {
+            transfer_succeeded = twi_master_read(data, data_length, issue_stop_condition);
+        }
+        else
+        {
+            transfer_succeeded = twi_master_write(data, data_length, issue_stop_condition);
+        }
+    }
+    return transfer_succeeded;
+}
+
+
+
+
+
+
+
+
+
+
+/////////////////////i2c-end
 
 
 
@@ -721,11 +981,19 @@ static void buttons_init(void)
 {
     // Set Wakeup and Bonds Delete buttons as wakeup sources.
     nrf_gpio_cfg_sense_input(YBUTTON_1,
-                             BUTTON_PULL, 
+                             NRF_GPIO_PIN_PULLUP, 
                              NRF_GPIO_PIN_SENSE_LOW);
     
     nrf_gpio_cfg_sense_input(YBUTTON_2,
-                             BUTTON_PULL, 
+                             NRF_GPIO_PIN_PULLUP, 
+                             NRF_GPIO_PIN_SENSE_LOW);
+														 
+		nrf_gpio_cfg_sense_input(YBUTTON_3,
+                             NRF_GPIO_PIN_PULLUP, 
+                             NRF_GPIO_PIN_SENSE_LOW);
+														 
+		nrf_gpio_cfg_sense_input(YBUTTON_4,
+                             NRF_GPIO_PIN_PULLUP, 
                              NRF_GPIO_PIN_SENSE_LOW);
 }
 
@@ -782,8 +1050,11 @@ static void power_manage(void)
 int main(void)
 {
     // Initialize.
+		
+
     leds_init();
     buttons_init();
+		twi_master_init();///ddd
     ble_stack_init();
     bond_manager_init();
     timers_init();

@@ -55,3 +55,4 @@
 .\_build\main.o: ..\..\..\..\..\Include\app_common\pstorage.h
 .\_build\main.o: ..\pstorage_platform.h
 .\_build\main.o: ..\twi_master.h
+.\_build\main.o: ..\nrf_delay.h

@@ -1,0 +1,46 @@
+
+T12EC 778:827 SEGGER J-Link V4.76d Log File (0001ms, 73497ms total)
+T12EC 778:827 DLL Compiled: Sep 13 2013 16:35:06 (0002ms, 73498ms total)
+T12EC 778:827 Logging started @ 2014-02-04 16:52 (0002ms, 73498ms total)
+T12EC 778:829 JLINK_SetWarnOutHandler(...) (0000ms, 73498ms total)
+T12EC 778:829 JLINK_OpenEx(...)
+  ***** Error: Can not connect to J-Link via TCP/IP. No emulator found.  returns "Can not connect to J-Link via TCP/IP. No emulator found." (0131ms, 73629ms total)
+
+  ***** API Error: API JLINK_GetHardwareVersion function called before JLINKARM_Open()
+T12EC 778:960 
+  ***** Error: Can not connect to J-Link via TCP/IP. No emulator found.JLINK_IsOpen()  returns 0x00 (0000ms, 73756ms total)
+T12EC 5810:222 JLINK_EMU_GetList(InterfaceMask = 0x00000002, MaxInfos = 0x00000004)   returns 0x00 (0128ms, 73884ms total)
+T12EC 5810:350 JLINK_SelectIP(Host = "193.219.158.40", Port = 19020)  returns 0x00 (0000ms, 73884ms total)
+T12EC 5810:350 JLINK_OpenEx(...)
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)  returns "Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)" (1510ms, 75394ms total)
+
+  ***** API Error: API JLINK_GetHardwareVersion function called before JLINKARM_Open()
+T12EC 5811:860 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)JLINK_IsOpen()  returns 0x00 (0000ms, 76896ms total)
+T12EC 5820:283 JLINK_EMU_GetList(InterfaceMask = 0x00000002, MaxInfos = 0x00000004)   returns 0x00 (0128ms, 77024ms total)
+T12EC 5820:411 JLINK_SelectIP(Host = "193.219.158.40", Port = 19020)  returns 0x00 (0000ms, 77024ms total)
+T12EC 5820:411 JLINK_OpenEx(...)
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)  returns "Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)" (1503ms, 78527ms total)
+
+  ***** API Error: API JLINK_GetHardwareVersion function called before JLINKARM_Open()
+T12EC 5821:914 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)JLINK_EMU_SelectIP()  returns 0xFFFFFFFF (0128ms, 80165ms total)
+
+  ***** API Error: API JLINK_GetFirmwareString function called before JLINKARM_Open()
+T12EC 5858:192 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)
+  ***** API Error: API JLINK_GetFeatureString function called before JLINKARM_Open()
+T12EC 5859:698 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)
+  ***** API Error: API JLINK_GetEmuCaps function called before JLINKARM_Open()
+T12EC 5861:202 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)
+  ***** API Error: API JLINK_TIF_GetAvailable function called before JLINKARM_Open()
+T12EC 5862:710 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)JLINK_IsOpen()  returns 0x00 (0000ms, 86193ms total)
+
+  ***** API Error: API JLINK_GetHardwareVersion function called before JLINKARM_Open()
+T12EC 5980:877 
+  ***** Error: Can not connect to J-Link via TCP/IP (193.219.158.40, port 19020)JLINK_Close() (0011ms, 87709ms total)
+T12EC 5988:434 JLINK_Close() (0000ms, 87709ms total)
+T12EC 5988:434 JLINK_Close() (0000ms, 87709ms total)
