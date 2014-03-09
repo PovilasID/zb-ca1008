@@ -1274,6 +1274,18 @@ static void power_manage(void)
 
 
 
+void OLED_invertDisplay(bool i) {
+	uint8_t frame[2]={0x00,0x00};
+	
+  if (i) {
+		frame[1]=(SSD1306_INVERTDISPLAY);
+  } else {
+		frame[1]=(SSD1306_NORMALDISPLAY);
+  }
+	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
+	
+}
+
 void OLED_init(void)
 {
 	
@@ -1315,6 +1327,9 @@ void OLED_init(void)
 		nrf_delay_us(100);
 
 	twi_master_transfer(ADDR_OLED_W, frame, 51, true);
+	
+	
+	OLED_invertDisplay(true);
 	
 	OLED_clear();
 
@@ -1449,23 +1464,6 @@ void OLED_dim(bool dim) {
 
 
 
-
-
-
-void OLED_invertDisplay(bool i) {
-	uint8_t frame[2]={0x00,0x00};
-	
-  if (i) {
-		frame[1]=(SSD1306_INVERTDISPLAY);
-  } else {
-		frame[1]=(SSD1306_NORMALDISPLAY);
-  }
-	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
-	
-}
-
-
-
 static void GPIO_init(void)
 {
 
@@ -1570,7 +1568,7 @@ int main(void)
 	twi_master_init();
 	OLED_init();
 
-	OLED_invertDisplay(true);
+	
 
 
 
