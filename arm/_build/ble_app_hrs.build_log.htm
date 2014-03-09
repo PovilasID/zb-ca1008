@@ -3,14 +3,69 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ex10091\arm\ble_app_hrs.uvproj
-Project File Date:  02/04/2014
+C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ca1008\arm\ble_app_hrs.uvproj
+Project File Date:  03/07/2014
 
 <h2>Output:</h2>
-Build target 'nrf51822_xxaa_s110 (256K)'
+Rebuild target 'nrf51822_xxaa_s110 (256K)'
+assembling arm_startup_nrf51.s...
+compiling system_nrf51.c...
 compiling main.c...
+..\main.c(223): warning:  #177-D: variable "test" was declared but never referenced
+  static uint8_t test;
+..\main.c(1246): warning: C4017W: bonds_delete may be used before being set
+    bool                bonds_delete;
+..\main.c: 2 warnings, 0 errors
+compiling ble_dis.c...
+compiling ble_bas.c...
+compiling ble_hrs.c...
+compiling ble_error_log.c...
+compiling ble_advdata.c...
+compiling ble_srv_common.c...
+compiling ble_sensorsim.c...
+compiling app_timer.c...
+compiling softdevice_handler.c...
+compiling ble_conn_params.c...
+compiling ble_bondmngr.c...
+compiling pstorage.c...
+compiling crc16.c...
+compiling ble_debug_assert_handler.c...
 linking...
-Program Size: Code=19784 RO-data=236 RW-data=272 ZI-data=6832  
+Program Size: Code=14840 RO-data=336 RW-data=528 ZI-data=6832  
 FromELF: creating hex file...
-".\_build\ble_app_hrs.axf" - 0 Error(s), 0 Warning(s).
- - 0 Error(s), 0 Warning(s).
+".\_build\ble_app_hrs.axf" - 0 Error(s), 2 Warning(s).
+Load "C:\\Keil\\ARM\\Device\\Nordic\\nrf51822\\Board\\nrf6310\\s110\\zb-ca1008\\arm\\_build\\ble_app_hrs.axf" 
+Set JLink Project File to "C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ca1008\arm\JLinkSettings.ini"
+* JLink Info: Device "NRF51822_XXAA" selected (257 KB flash, 16 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.76d, compiled Sep 13 2013 16:35:06
+Firmware: J-Link Lite-Cortex-M V8 compiled Aug 29 2012 15:24:23
+Hardware: V8.00
+S/N : 518002570 
+Feature(s) : GDB 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BB11477
+* JLink Info: Found Cortex-M0 r0p0, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: nRF51822_xxAA
+VTarget = 3.002V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+</pre>
+</body>
+</html>

@@ -50,31 +50,30 @@
 #include "nrf_gpio.h"
 
 
-///////////////////////////////////////////////PINOUT REF TO ZB-EX10091X-X1405-oled-accel-gyro-chrg
-#define YBUTTON_1		25//WAKE UP BUTTON
-#define YBUTTON_2		27//DELETE BLUETOOTH BONDS ON RESET
-#define YBUTTON_3		29//Undefined
-#define YBUTTON_4		30///TEMP
+///////////////////////////////////////////////PINOUT REF TO ZB-CA1008
+#define BUTTON_W		29// WAKEUP/LOCK BUTTON
 
-#define YLED_ADVERT     1///TEMP
-#define YLED_CONN       3///TEMP
-#define YLED_ASSERT     5///TEMP
+#define TOUCH_INT		7
 
-#define YACCEL_DEN_G		0
-#define YACCEL_DRDY_G		2
-#define YACCEL_INT1_G		4
-#define YACCEL_INT2_A		6
+//#define ACCEL_DEN_G		12
+#define ACCEL_DRDY_INT2_G		11
+#define ACCEL_INT1_G		10
+#define ACCEL_INT1_A		8
+#define ACCEL_INT2_A		9
 
-#define YLCD_RESET       11
+#define OLED_RST		14
 
-#define YBAT_STATUS      23
+#define BUZZER      17
+#define BUZZER2      18
 
-#define I2C_SDA		14U
-#define I2C_SCL		12U
+#define BAT_STATUS      28
+#define BAT_LVL      //AIN2
+
+#define I2C_SDA		16
+#define I2C_SCL		15
 ///////////////////////////////////////////////PINOUT-END
 
-
-#define DEVICE_NAME                          "ZEBE-10091"                               /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                          "ZEBE-1009"                               /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME                    "COOLDUDES"                      /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                     40                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 25 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS           180                                        /**< The advertising timeout in units of seconds. */
@@ -122,6 +121,82 @@
 
 #define DEAD_BEEF                            0xDEADBEEF                                 /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
+//////////////////////////////////////
+//I2C DEFINES BELOW
+
+#define ADDR_ACCEL                           0x18   
+#define ADDR_GYRO                            0x6A 
+
+#define ADDR_OLED_W                          0x7A
+#define ADDR_OLED_R                          0x7B
+//    R/W bit:    0-write   1-read
+
+#define ADDR_EEPROM_W                        0xA6
+#define ADDR_EEPROM_R                        0xA7
+
+#define ADDR_TOUCH                           0x5B ///DDD 
+
+//ssd1306 oled controller defines
+
+#define OLED_WIDTH                  64
+#define OLED_HEIGHT                 48
+
+#define SSD1306_SETCONTRAST 0x81
+#define SSD1306_DISPLAYALLON_RESUME 0xA4
+#define SSD1306_DISPLAYALLON 0xA5
+#define SSD1306_NORMALDISPLAY 0xA6
+#define SSD1306_INVERTDISPLAY 0xA7
+#define SSD1306_DISPLAYOFF 0xAE
+#define SSD1306_DISPLAYON 0xAF
+
+#define SSD1306_SETDISPLAYOFFSET 0xD3
+#define SSD1306_SETCOMPINS 0xDA
+
+#define SSD1306_SETVCOMDETECT 0xDB
+
+#define SSD1306_SETDISPLAYCLOCKDIV 0xD5
+#define SSD1306_SETPRECHARGE 0xD9
+
+#define SSD1306_SETMULTIPLEX 0xA8
+
+#define SSD1306_SETLOWCOLUMN 0x00
+#define SSD1306_SETHIGHCOLUMN 0x10
+
+#define SSD1306_SETSTARTLINE 0x40
+
+#define SSD1306_MEMORYMODE 0x20
+#define SSD1306_COLUMNADDR 0x21
+#define SSD1306_PAGEADDR   0x22
+
+#define SSD1306_COMSCANINC 0xC0
+#define SSD1306_COMSCANDEC 0xC8
+
+#define SSD1306_SEGREMAP 0xA0
+
+#define SSD1306_CHARGEPUMP 0x8D
+
+#define SSD1306_EXTERNALVCC 0x1
+#define SSD1306_SWITCHCAPVCC 0x2
+
+// Scrolling #defines
+#define SSD1306_ACTIVATE_SCROLL 0x2F
+#define SSD1306_DEACTIVATE_SCROLL 0x2E
+#define SSD1306_SET_VERTICAL_SCROLL_AREA 0xA3
+#define SSD1306_RIGHT_HORIZONTAL_SCROLL 0x26
+#define SSD1306_LEFT_HORIZONTAL_SCROLL 0x27
+#define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
+#define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
+
+
+//display items
+#define img_bt_advertise 1
+#define img_bt_connected 2
+#define img_bt_disconnected 3
+#define img_init 4
+
+
+
+
 static uint16_t                              m_conn_handle = BLE_CONN_HANDLE_INVALID;   /**< Handle of the current connection. */
 static ble_gap_sec_params_t                  m_sec_params;                              /**< Security requirements for this application. */
 static ble_gap_adv_params_t                  m_adv_params;                              /**< Parameters to be passed to the stack when starting advertising. */
@@ -142,15 +217,36 @@ static app_timer_id_t                        m_rr_interval_timer_id;            
 static app_timer_id_t                        m_sensor_contact_timer_id;                 /**< Sensor contact detected timer. */
 
 
+//oled screen size is 64x48
+//oled buffer arrays below
 
-//////////////////i2c-start
+static uint8_t test;
 
-
-
+static uint8_t buffer_ff[16]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q5[16]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q6[16]  = {0x00, 0x01, 0xC3, 0x87, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q9[16]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE1, 0xC3, 0x87, 0x0F,};
+static uint8_t buffer_bt_q10[16]  = {0x00, 0x00, 0x0F, 0x87, 0xC3, 0xE0, 0xF0, 0xF8, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q11[16]  = {0xFF, 0xFF, 0x3F, 0x3F, 0x3F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F, 0x3F, 0x3F, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q12[16]  = {0xFF, 0xFF, 0x3F, 0x3F, 0x3F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q13[16]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xBF, 0x1F, 0x0F, 0x87, 0xC3, 0xE1, 0xF0, 0xF8,};
+static uint8_t buffer_bt_q14[16]  = {0x00, 0x00, 0xF8, 0xF0, 0x61, 0x03, 0x07, 0x0F, 0x9F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q15[16]  = {0xFF, 0xFF, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q16[16]  = {0xFF, 0xFF, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q18[16]  = {0x80, 0xC0, 0xE1, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer_bt_q20[16]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer10on[16]  = {0x0F, 0x03, 0x01, 0xF0, 0xFC, 0xFC, 0xF8, 0xE0, 0x01, 0x07, 0x3F, 0xFF, 0x01, 0x00, 0x00, 0x01,};
+static uint8_t buffer11on[16]  = {0x0F, 0x3F, 0xFF, 0x01, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
+static uint8_t buffer14on[16]  = {0xF0, 0xC0, 0x80, 0x0F, 0x3F, 0x3F, 0x1F, 0x07, 0x80, 0xE0, 0xF8, 0xFF, 0x80, 0x00, 0x00, 0xFF,};
+static uint8_t buffer15on[16]  = {0xFC, 0xF8, 0xE0, 0x80, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,};
 
 
 /* Max cycles approximately to wait on RXDREADY and TXDREADY event, this is optimum way instead of using timers, this is not power aware, negetive side is this is not power aware */
 #define MAX_TIMEOUT_LOOPS             (10000UL)        /*!< MAX while loops to wait for RXD/TXD event */
+
+
+
+
 
 static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
 {
@@ -205,63 +301,6 @@ static bool twi_master_write(uint8_t *data, uint8_t data_length, bool issue_stop
     return true;
 }
 
-static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
-{
-    uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for RXDREADY event*/
-
-    if(data_length == 0)
-    {
-        /* gently return false for requesting data of size 0 */
-        return false;
-    }
-
-
-    if (data_length == 1)
-    {
-        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
-    }
-    else
-    {
-        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
-    }
-    NRF_PPI->CHENSET = PPI_CHENSET_CH0_Msk;
-    NRF_TWI1->TASKS_STARTRX = 1;
-    while(true)
-    {
-        while((NRF_TWI1->EVENTS_RXDREADY == 0) && (--timeout))
-        {
-        }
-
-        if(timeout == 0)
-        {
-            /* timeout before receiving event*/
-            return false;
-        }
-
-        NRF_TWI1->EVENTS_RXDREADY = 0;
-        *data++ = NRF_TWI1->RXD;
-
-        /* configure PPI to stop TWI master before we get last BB event */
-        if (--data_length == 1)
-        {
-            NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
-        }
-
-        if (data_length == 0)
-            break;
-
-        NRF_TWI1->TASKS_RESUME = 1;
-    }
-
-    /* wait until stop sequence is sent and clear the EVENTS_STOPPED */
-    while(NRF_TWI1->EVENTS_STOPPED == 0)
-    {
-    }
-    NRF_TWI1->EVENTS_STOPPED = 0;
-
-    NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
-    return true;
-}
 
 /**
  * Detects stuck slaves (SDA = 0 and SCL = 1) and tries to clear the bus.
@@ -334,6 +373,66 @@ static bool twi_master_clear_bus(void)
     return bus_clear;
 }
 
+
+static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_condition)
+{
+    uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for RXDREADY event*/
+
+    if(data_length == 0)
+    {
+        /* gently return false for requesting data of size 0 */
+        return false;
+    }
+		
+    if (data_length == 1)
+    {
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+    }
+    else
+    {
+        NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
+    }
+    NRF_PPI->CHENSET = PPI_CHENSET_CH0_Msk;
+    NRF_TWI1->TASKS_STARTRX = 1;
+    while(true)
+    {
+        while((NRF_TWI1->EVENTS_RXDREADY == 0) && (--timeout))
+        {
+        }
+
+        if(timeout == 0)
+        {
+            /* timeout before receiving event*/
+            return false;
+        }
+
+        NRF_TWI1->EVENTS_RXDREADY = 0;
+        *data++ = NRF_TWI1->RXD;
+
+        /* configure PPI to stop TWI master before we get last BB event */
+        if (--data_length == 1)
+        {
+            NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
+        }
+
+        if (data_length == 0)
+            break;
+
+        NRF_TWI1->TASKS_RESUME = 1;
+    }
+
+    /* wait until stop sequence is sent and clear the EVENTS_STOPPED */
+    while(NRF_TWI1->EVENTS_STOPPED == 0)
+    {
+    }
+    NRF_TWI1->EVENTS_STOPPED = 0;
+
+    NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
+    return true;
+}
+
+
+
 bool twi_master_init(void)
 {
     /* To secure correct signal levels on the pins used by the TWI
@@ -358,7 +457,7 @@ bool twi_master_init(void)
     NRF_TWI1->EVENTS_TXDSENT = 0;
     NRF_TWI1->PSELSCL = I2C_SCL;
     NRF_TWI1->PSELSDA = I2C_SDA;
-    NRF_TWI1->FREQUENCY = TWI_FREQUENCY_FREQUENCY_K100 << TWI_FREQUENCY_FREQUENCY_Pos;
+    NRF_TWI1->FREQUENCY = TWI_FREQUENCY_FREQUENCY_K400 << TWI_FREQUENCY_FREQUENCY_Pos;
     NRF_PPI->CH[0].EEP = (uint32_t)&NRF_TWI1->EVENTS_BB;
     NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_SUSPEND;
     NRF_PPI->CHENCLR = PPI_CHENCLR_CH0_Msk;
@@ -367,7 +466,7 @@ bool twi_master_init(void)
     return twi_master_clear_bus();
 }
 
-bool twi_master_transfer(uint8_t address, uint8_t *data, uint8_t data_length, bool issue_stop_condition)
+bool twi_master_transfer(uint8_t address, uint8_t *data, uint16_t data_length, bool issue_stop_condition)
 {
     bool transfer_succeeded = true;
     if (data_length > 0 && twi_master_clear_bus())
@@ -387,17 +486,189 @@ bool twi_master_transfer(uint8_t address, uint8_t *data, uint8_t data_length, bo
 }
 
 
+void twi_oled_write(uint8_t *data)
+{
+	
+	
+	  if (twi_master_clear_bus())
+    {
+        NRF_TWI1->ADDRESS = (ADDR_OLED_W >> 1);
+
+		
+			uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for EVENTS_TXDSENT event*/
+			uint8_t data_length=17;
+
+			if(data_length == 17)
+			{
+					NRF_TWI1->TXD = 0x40;
+			}
+			else
+			{
+					NRF_TWI1->TXD = *data++;
+			}
+			
+			NRF_TWI1->TASKS_STARTTX = 1;
+
+			while (true)
+			{
+					while(NRF_TWI1->EVENTS_TXDSENT == 0 && (--timeout))
+					{
+					}
+
+					if (timeout == 0)
+					{
+							NRF_TWI1->EVENTS_STOPPED = 0; 
+							NRF_TWI1->TASKS_STOP = 1; 
+							/* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+							while(NRF_TWI1->EVENTS_STOPPED == 0) 
+							{ 
+							}
+							/* timeout before receiving event*/
+
+					}
 
 
+					--data_length;
+					
+					NRF_TWI1->EVENTS_TXDSENT = 0;
+					if (data_length == 0)
+					{
+							break;
+					}
+
+					NRF_TWI1->TXD = *data++;
+			}
+			
+	 
+					NRF_TWI1->EVENTS_STOPPED = 0; 
+					NRF_TWI1->TASKS_STOP = 1; 
+					/* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+					while(NRF_TWI1->EVENTS_STOPPED == 0) 
+					{ 
+					} 
+
+		}
+}
+
+void OLED_clear(void) 
+{
+		for (uint8_t i=1; i<65; i++) {
+			twi_oled_write(buffer_ff);			
+	}
+}
+
+void OLED_display(uint8_t what) 
+{
+	/*
+		*/
+	uint8_t framek[7]={
+		0x00,SSD1306_MEMORYMODE,0x00,
+		0x00,SSD1306_COLUMNADDR,32,95
+	};
+	twi_master_transfer(ADDR_OLED_W, framek, 7, true);
+	
+	
+	if(what==img_bt_advertise)
+	{
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q5);
+		twi_oled_write(buffer_bt_q6);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q9);
+		twi_oled_write(buffer_bt_q10);
+		twi_oled_write(buffer_bt_q11);
+		twi_oled_write(buffer_bt_q12);
+		twi_oled_write(buffer_bt_q13);
+		twi_oled_write(buffer_bt_q14);
+		twi_oled_write(buffer_bt_q15);
+		twi_oled_write(buffer_bt_q16);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q18);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q20);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+	}
+	else if(what==img_bt_connected)
+	{
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q5);
+		twi_oled_write(buffer_bt_q6);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q9);
+		twi_oled_write(buffer_bt_q10);
+		twi_oled_write(buffer10on);
+		twi_oled_write(buffer11on);
+		twi_oled_write(buffer_bt_q13);
+		twi_oled_write(buffer_bt_q14);
+		twi_oled_write(buffer14on);
+		twi_oled_write(buffer15on);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q18);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q20);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);	
+	}
+	else if(what==img_bt_disconnected)
+	{
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q5);
+		twi_oled_write(buffer_bt_q6);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q9);
+		twi_oled_write(buffer_bt_q10);
+		twi_oled_write(buffer_bt_q12);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q13);
+		twi_oled_write(buffer_bt_q14);
+		twi_oled_write(buffer_bt_q16);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q18);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_bt_q20);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+		twi_oled_write(buffer_ff);
+	}
+		for (uint8_t i=1; i<9; i++) {
+			twi_oled_write(buffer_ff);			
+	}
+	
+}
 
 
+/**@brief Function for starting advertising.
+ */
+static void advertising_start(void)
+{
+    uint32_t err_code;
 
+    err_code = sd_ble_gap_adv_start(&m_adv_params);
+    APP_ERROR_CHECK(err_code);
 
+		OLED_display(img_bt_advertise);
+		
 
-
-/////////////////////i2c-end
-
-
+}
 
 
 /**@brief Function for error handling, which is called when an error has occurred.
@@ -411,7 +682,7 @@ bool twi_master_transfer(uint8_t address, uint8_t *data, uint8_t data_length, bo
  */
 void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t * p_file_name)
 {
-    nrf_gpio_pin_set(YLED_ASSERT);
+    ///nrf_gpio_pin_set(YLED_ASSERT);
 
     // This call can be used for debug purposes during application development.
     // @note CAUTION: Activating this code will write the stack to flash on an error.
@@ -443,7 +714,6 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
 
-
 /**@brief Function for performing a battery measurement, and update the Battery Level characteristic in the Battery Service.
  */
 static void battery_level_update(void)
@@ -459,12 +729,11 @@ static void battery_level_update(void)
         (err_code != NRF_ERROR_INVALID_STATE) &&
         (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
         (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-    )
+			 )
     {
         APP_ERROR_HANDLER(err_code);
     }
 }
-
 
 /**@brief Function for handling the Battery measurement timer timeout.
  *
@@ -478,7 +747,6 @@ static void battery_level_meas_timeout_handler(void * p_context)
     UNUSED_PARAMETER(p_context);
     battery_level_update();
 }
-
 
 /**@brief Function for handling the Heart rate measurement timer timeout.
  *
@@ -504,7 +772,7 @@ static void heart_rate_meas_timeout_handler(void * p_context)
         (err_code != NRF_ERROR_INVALID_STATE) &&
         (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
         (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-    )
+				)
     {
         APP_ERROR_HANDLER(err_code);
     }
@@ -514,6 +782,7 @@ static void heart_rate_meas_timeout_handler(void * p_context)
     //       of messages without RR Interval measurements.
     m_rr_interval_enabled = ((cnt % 3) != 0);
 }
+
 
 
 /**@brief Function for handling the RR interval timer timeout.
@@ -555,17 +824,6 @@ static void sensor_contact_detected_timeout_handler(void * p_context)
     ble_hrs_sensor_contact_detected_update(&m_hrs, sensor_contact_detected);
 }
 
-
-/**@brief Function for the LEDs initialization.
- *
- * @details Initializes all LEDs used by this application.
- */
-static void leds_init(void)
-{
-    nrf_gpio_cfg_output(YLED_ADVERT);
-    nrf_gpio_cfg_output(YLED_CONN);
-    nrf_gpio_cfg_output(YLED_ASSERT);
-}
 
 
 /**@brief Function for the Timer initialization.
@@ -635,11 +893,15 @@ static void gap_params_init(void)
 }
 
 
+
+
 /**@brief Function for initializing the Advertising functionality.
  *
  * @details Encodes the required advertising data and passes it to the stack.
  *          Also builds a structure to be passed to the stack when starting advertising.
  */
+ 
+ 
 static void advertising_init(void)
 {
     uint32_t      err_code;
@@ -801,20 +1063,6 @@ static void application_timers_start(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
-/**@brief Function for starting advertising.
- */
-static void advertising_start(void)
-{
-    uint32_t err_code;
-
-    err_code = sd_ble_gap_adv_start(&m_adv_params);
-    APP_ERROR_CHECK(err_code);
-
-    nrf_gpio_pin_set(YLED_ADVERT);
-}
-
-
 /**@brief Function for handling the Connection Parameters Module.
  *
  * @details This function will be called for all events in the Connection Parameters Module which
@@ -881,14 +1129,16 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            nrf_gpio_pin_set(YLED_CONN);
-            nrf_gpio_pin_clear(YLED_ADVERT);
+
+            OLED_display(img_bt_connected);
 
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             break;
 
-        case BLE_GAP_EVT_DISCONNECTED:
-            nrf_gpio_pin_clear(YLED_CONN);
+						case BLE_GAP_EVT_DISCONNECTED:
+					
+            OLED_display(img_bt_disconnected);
+
 
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
 
@@ -897,6 +1147,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             APP_ERROR_CHECK(err_code);
 
             advertising_start();
+
+
             break;
 
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
@@ -909,7 +1161,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_TIMEOUT:
             if (p_ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT)
             {
-                nrf_gpio_pin_clear(YLED_ADVERT);
+								OLED_display(img_bt_disconnected);
 
                 // Go to system-off mode (this function will not return; wakeup will cause a reset).
                 err_code = sd_power_system_off();
@@ -975,29 +1227,6 @@ static void ble_stack_init(void)
 
 }
 
-/**@brief Function for initializing buttons.
- */
-static void buttons_init(void)
-{
-    // Set Wakeup and Bonds Delete buttons as wakeup sources.
-    nrf_gpio_cfg_sense_input(YBUTTON_1,
-                             NRF_GPIO_PIN_PULLUP, 
-                             NRF_GPIO_PIN_SENSE_LOW);
-    
-    nrf_gpio_cfg_sense_input(YBUTTON_2,
-                             NRF_GPIO_PIN_PULLUP, 
-                             NRF_GPIO_PIN_SENSE_LOW);
-														 
-		nrf_gpio_cfg_sense_input(YBUTTON_3,
-                             NRF_GPIO_PIN_PULLUP, 
-                             NRF_GPIO_PIN_SENSE_LOW);
-														 
-		nrf_gpio_cfg_sense_input(YBUTTON_4,
-                             NRF_GPIO_PIN_PULLUP, 
-                             NRF_GPIO_PIN_SENSE_LOW);
-}
-
-
 /**@brief Function for handling a Bond Manager error.
  *
  * @param[in]   nrf_error   Error code containing information about what went wrong.
@@ -1021,7 +1250,7 @@ static void bond_manager_init(void)
     APP_ERROR_CHECK(err_code);
     
     // Clear all bonded centrals if the Bonds Delete button is pushed.
-    bonds_delete = (nrf_gpio_pin_read(YBUTTON_2) == 0);
+    ///bonds_delete = (nrf_gpio_pin_read(YBUTTON_2) == 0);///ddd
 
     // Initialize the Bond Manager.
     bond_init_data.flash_page_num_bond     = FLASH_PAGE_BOND;
@@ -1035,7 +1264,6 @@ static void bond_manager_init(void)
 }
 
 
-
 /**@brief Function for the Power manager.
  */
 static void power_manage(void)
@@ -1045,35 +1273,334 @@ static void power_manage(void)
 }
 
 
+
+void OLED_init(void)
+{
+	
+	// Init sequence for 64x48 OLED module
+			
+	uint8_t frame[51]={
+	0x00,SSD1306_DISPLAYOFF,
+	0x00,SSD1306_SETDISPLAYCLOCKDIV,0x80,
+	0x00,SSD1306_SETMULTIPLEX,0x2F,
+	0x00,SSD1306_SETDISPLAYOFFSET,0,
+	0x00,SSD1306_SETSTARTLINE | 0x0,//////good
+	0x00,SSD1306_CHARGEPUMP,0x14,
+	0x00,SSD1306_MEMORYMODE,0x00,
+	0x00,SSD1306_SEGREMAP | 0x1,
+	0x00,SSD1306_COMSCANDEC, 0xC8,////////////////
+	0x00,SSD1306_SETCOMPINS,0x12,
+	0x00,SSD1306_SETCONTRAST,0xCF,
+	0x00,SSD1306_SETPRECHARGE,0x22,
+	0x00,SSD1306_SETVCOMDETECT,0x00,
+	0x00,SSD1306_DISPLAYALLON_RESUME,
+	0x00,SSD1306_NORMALDISPLAY,
+	0x00,SSD1306_DISPLAYON
+	};
+	
+	
+		// Setup reset pin direction (used by both SPI and I2C)  
+		nrf_gpio_pin_set(OLED_RST);
+
+		// VDD (3.3V) goes high at start, lets just chill for a ms
+		nrf_delay_us(1000);
+		// bring reset low
+		nrf_gpio_pin_clear(OLED_RST);
+		// wait 10ms
+		nrf_delay_us(1000);
+		// bring out of reset
+		nrf_gpio_pin_set(OLED_RST);
+		// turn on VCC (9V?)
+	
+		nrf_delay_us(100);
+
+	twi_master_transfer(ADDR_OLED_W, frame, 51, true);
+	
+	OLED_clear();
+
+
+}
+
+
+
+
+// startscrollright
+// Activate a right handed scroll for rows start through stop
+// Hint, the display is 16 rows tall. To scroll the whole display, run:
+// display.scrollright(0x00, 0x0F) 
+void OLED_startscrollright(uint8_t start, uint8_t stop){
+
+	uint8_t frame[16]={
+		0x00,SSD1306_RIGHT_HORIZONTAL_SCROLL,
+		0x00,0x00,
+		0x00,start,
+		0x00,0x00,
+		0x00,stop,
+		0x00,0x00,
+		0x00,0xFF,
+		0x00,SSD1306_ACTIVATE_SCROLL
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 16, true);
+	
+}
+
+// startscrollleft
+// Activate a right handed scroll for rows start through stop
+// Hint, the display is 16 rows tall. To scroll the whole display, run:
+// display.scrollright(0x00, 0x0F) 
+void OLED_startscrollleft(uint8_t start, uint8_t stop){
+	
+		uint8_t frame[16]={
+		0x00,SSD1306_LEFT_HORIZONTAL_SCROLL,
+		0x00,0x00,
+		0x00,start,
+		0x00,0x00,
+		0x00,stop,
+		0x00,0x00,
+		0x00,0xFF,
+		0x00,SSD1306_ACTIVATE_SCROLL
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 16, true);
+
+}
+
+// startscrolldiagright
+// Activate a diagonal scroll for rows start through stop
+// Hint, the display is 16 rows tall. To scroll the whole display, run:
+// display.scrollright(0x00, 0x0F) 
+void OLED_startscrolldiagright(uint8_t start, uint8_t stop){
+	
+	uint8_t frame[22]={
+		0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
+		0x00,0x00,
+		0x00,OLED_HEIGHT,
+		0x00,SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL,
+		0x00,0x00,
+		0x00,start,
+		0x00,0x00,
+		0x00,stop,
+		0x00,0x01,
+		0x00,SSD1306_ACTIVATE_SCROLL
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 22, true);
+	
+}
+
+// startscrolldiagleft
+// Activate a diagonal scroll for rows start through stop
+// Hint, the display is 16 rows tall. To scroll the whole display, run:
+// display.scrollright(0x00, 0x0F) 
+void OLED_startscrolldiagleft(uint8_t start, uint8_t stop){
+
+	
+		uint8_t frame[22]={
+		0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
+		0x00,0x00,
+		0x00,OLED_HEIGHT,
+		0x00,SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL,
+		0x00,0x00,
+		0x00,start,
+		0x00,0x00,
+		0x00,stop,
+		0x00,0x01,
+		0x00,SSD1306_ACTIVATE_SCROLL
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 22, true);
+	
+
+}
+
+void OLED_stopscroll(void){
+	
+	uint8_t frame[2]={
+		0x00,SSD1306_DEACTIVATE_SCROLL
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
+	
+}
+
+// Dim the display
+// dim = true: display is dimmed
+// dim = false: display is normal
+void OLED_dim(bool dim) {
+  uint8_t contrast;
+
+  if (dim) {
+    contrast = 0; // Dimmed display
+  } else {
+    contrast = 0xCF;
+  }
+  // the range of contrast to too small to be really useful
+  // it is useful to dim the display
+	
+	uint8_t frame[4]={
+		0x00,SSD1306_SETCONTRAST,
+		0x00,contrast	
+	};
+
+	twi_master_transfer(ADDR_OLED_W, frame, 4, true);
+
+}
+
+
+
+
+
+
+void OLED_invertDisplay(bool i) {
+	uint8_t frame[2]={0x00,0x00};
+	
+  if (i) {
+		frame[1]=(SSD1306_INVERTDISPLAY);
+  } else {
+		frame[1]=(SSD1306_NORMALDISPLAY);
+  }
+	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
+	
+}
+
+
+
+static void GPIO_init(void)
+{
+
+	NRF_GPIO->PIN_CNF[BUTTON_W] = 
+															(GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);	
+	/*		
+	NRF_GPIO->PIN_CNF[ACCEL_DEN_G] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);		
+	*/		
+			
+	NRF_GPIO->PIN_CNF[ACCEL_DRDY_INT2_G] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);			
+
+	NRF_GPIO->PIN_CNF[ACCEL_INT1_G] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+		
+	NRF_GPIO->PIN_CNF[ACCEL_INT1_A] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+
+	NRF_GPIO->PIN_CNF[ACCEL_INT2_A] =
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+		
+	NRF_GPIO->PIN_CNF[ACCEL_INT2_A] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+
+
+	NRF_GPIO->PIN_CNF[BUZZER] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+
+	NRF_GPIO->PIN_CNF[BUZZER2] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+																							
+	NRF_GPIO->PIN_CNF[OLED_RST] = 
+															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+
+	NRF_GPIO->PIN_CNF[BAT_STATUS] = 
+															(GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
+															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);	
+
+
+
+/*
+
+#define BAT_LVL      //AIN2
+
+*/
+		
+		
+}
+
+
+
 /**@brief Function for application main entry.
  */
 int main(void)
 {
     // Initialize.
-		
+  GPIO_init();
+	twi_master_init();
+	OLED_init();
 
-    leds_init();
-    buttons_init();
-		twi_master_init();///ddd
-    ble_stack_init();
-    bond_manager_init();
-    timers_init();
-    gap_params_init();
-    advertising_init();
-    services_init();
-    sensor_sim_init();
-    conn_params_init();
-    sec_params_init();
+	OLED_invertDisplay(true);
+
+
+
+  ble_stack_init();
+  bond_manager_init();
+  timers_init();
+  gap_params_init();
+  advertising_init();
+  services_init();
+  sensor_sim_init();
+  conn_params_init();
+  sec_params_init();
 
     // Start execution.
-    application_timers_start();
-    advertising_start();
+  application_timers_start();
+  advertising_start();
 
-    // Enter main loop.
+
+
+
+
+
+// Enter main loop.
     for (;;)
     {
         power_manage();
     }
+		
+		
+		
 }
 
 

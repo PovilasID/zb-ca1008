@@ -55,7 +55,7 @@
 #define TWI_SDA_READ() ((NRF_GPIO->IN >> I2C_SDA) & 0x1UL)                     /*!< Reads current state of SDA */
 #define TWI_SCL_READ() ((NRF_GPIO->IN >> I2C_SCL) & 0x1UL)                    /*!< Reads current state of SCL */
 
-#define TWI_DELAY() nrf_delay_us(4) /*!< Time to wait when pin states are changed. For fast-mode the delay can be zero and for standard-mode 4 us delay is sufficient. */
+#define TWI_DELAY() nrf_delay_us(1) /*!< Time to wait when pin states are changed. For fast-mode the delay can be zero and for standard-mode 4 us delay is sufficient. */
 
 
 /**
@@ -89,7 +89,7 @@ bool twi_master_init(void);
  * @retval true Data transfer succeeded without errors.
  * @retval false Data transfer failed.
  */
-bool twi_master_transfer(uint8_t address, uint8_t *data, uint8_t data_length, bool issue_stop_condition);
+bool twi_master_transfer(uint8_t address, uint8_t *data, uint16_t data_length, bool issue_stop_condition);
 
 /**
  *@}
