@@ -124,8 +124,11 @@
 //////////////////////////////////////
 //I2C DEFINES BELOW
 
-#define ADDR_ACCEL                           0x18   
-#define ADDR_GYRO                            0x6A 
+#define ADDR_ACCEL_W                           0x30  
+#define ADDR_ACCEL_R                           0x31  
+
+#define ADDR_GYRO_W                            0xD4 
+#define ADDR_GYRO_R                            0xD5
 
 #define ADDR_OLED_W                          0x7A
 #define ADDR_OLED_R                          0x7B
@@ -134,7 +137,8 @@
 #define ADDR_EEPROM_W                        0xA6
 #define ADDR_EEPROM_R                        0xA7
 
-#define ADDR_TOUCH                           0x5B ///DDD 
+#define ADDR_TOUCH_W                           0xB6 ///DDD 
+#define ADDR_TOUCH_R                           0xB7 ///DDD 
 
 //ssd1306 oled controller defines
 
