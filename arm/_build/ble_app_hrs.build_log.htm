@@ -11,11 +11,15 @@ Rebuild target 'nrf51822_xxaa_s110 (256K)'
 assembling arm_startup_nrf51.s...
 compiling system_nrf51.c...
 compiling main.c...
-..\main.c(227): warning:  #177-D: variable "test" was declared but never referenced
+..\main.c(1743): warning:  #177-D: variable "frame" was declared but never referenced
+        uint8_t frame[1]={0x00};
+..\main.c(1744): warning:  #177-D: variable "rxdata" was declared but never referenced
+        uint8_t rxdata[1]={0x22};
+..\main.c(279): warning:  #177-D: variable "test" was declared but never referenced
   static uint8_t test;
-..\main.c(1250): warning: C4017W: bonds_delete may be used before being set
+..\main.c(1417): warning: C4017W: bonds_delete may be used before being set
     bool                bonds_delete;
-..\main.c: 2 warnings, 0 errors
+..\main.c: 4 warnings, 0 errors
 compiling ble_dis.c...
 compiling ble_bas.c...
 compiling ble_hrs.c...
@@ -31,6 +35,168 @@ compiling pstorage.c...
 compiling crc16.c...
 compiling ble_debug_assert_handler.c...
 linking...
-Program Size: Code=14840 RO-data=336 RW-data=528 ZI-data=6832  
+Program Size: Code=15220 RO-data=336 RW-data=528 ZI-data=6832  
 FromELF: creating hex file...
-".\_build\ble_app_hrs.axf" - 0 Error(s), 2 Warning(s).
+".\_build\ble_app_hrs.axf" - 0 Error(s), 4 Warning(s).
+1]=REL_THRESH;
+..\main.c(549): error:  #20: identifier "ELE5_T" is undefined
+        frame[0]=ELE5_T;
+..\main.c(553): error:  #20: identifier "ELE5_R" is undefined
+        frame[0]=ELE5_R;
+..\main.c(557): error:  #20: identifier "ELE6_T" is undefined
+        frame[0]=ELE6_T;
+..\main.c(561): error:  #20: identifier "ELE6_R" is undefined
+        frame[0]=ELE6_R;
+..\main.c(565): error:  #20: identifier "ELE7_T" is undefined
+        frame[0]=ELE7_T;
+..\main.c(569): error:  #20: identifier "ELE7_R" is undefined
+        frame[0]=ELE7_R;
+..\main.c(579): error:  #20: identifier "FIL_CFG" is undefined
+        frame[0]=FIL_CFG;
+..\main.c(591): error:  #20: identifier "ELE_CFG" is undefined
+        frame[0]=ELE_CFG;
+..\main.c(227): warning:  #177-D: variable "test" was declared but never referenced
+  static uint8_t test;
+..\main.c: 1 warning, 20 errors
+compiling ble_dis.c...
+compiling ble_bas.c...
+compiling ble_hrs.c...
+compiling ble_error_log.c...
+compiling ble_advdata.c...
+compiling ble_srv_common.c...
+compiling ble_sensorsim.c...
+compiling app_timer.c...
+compiling softdevice_handler.c...
+compiling ble_conn_params.c...
+compiling ble_bondmngr.c...
+compiling pstorage.c...
+compiling crc16.c...
+compiling ble_debug_assert_handler.c...
+".\_build\ble_app_hrs.axf" - 20 Error(s), 1 Warning(s).
+Target not created
+cted (257 KB flash, 16 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.76d, compiled Sep 13 2013 16:35:06
+Firmware: J-Link Lite-Cortex-M V8 compiled Aug 29 2012 15:24:23
+Hardware: V8.00
+S/N : 518002570 
+Feature(s) : GDB 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BB11477
+* JLink Info: Found Cortex-M0 r0p0, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: nRF51822_xxAA
+VTarget = 3.002V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Nordic\\nrf51822\\Board\\nrf6310\\s110\\zb-ca1008\\arm\\_build\\ble_app_hrs.axf" 
+Set JLink Project File to "C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ca1008\arm\JLinkSettings.ini"
+* JLink Info: Device "NRF51822_XXAA" selected (257 KB flash, 16 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.76d, compiled Sep 13 2013 16:35:06
+Firmware: J-Link Lite-Cortex-M V8 compiled Aug 29 2012 15:24:23
+Hardware: V8.00
+S/N : 518002570 
+Feature(s) : GDB 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BB11477
+* JLink Info: Found Cortex-M0 r0p0, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: nRF51822_xxAA
+VTarget = 3.002V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+Load "C:\\Keil\\ARM\\Device\\Nordic\\nrf51822\\Board\\nrf6310\\s110\\zb-ca1008\\arm\\_build\\ble_app_hrs.axf" 
+Set JLink Project File to "C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ca1008\arm\JLinkSettings.ini"
+* JLink Info: Device "NRF51822_XXAA" selected (257 KB flash, 16 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.76d, compiled Sep 13 2013 16:35:06
+Firmware: J-Link Lite-Cortex-M V8 compiled Aug 29 2012 15:24:23
+Hardware: V8.00
+S/N : 518002570 
+Feature(s) : GDB 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BB11477
+* JLink Info: Found Cortex-M0 r0p0, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: nRF51822_xxAA
+VTarget = 3.002V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 1, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+\arm\\_build\\ble_app_hrs.axf" 
+Set JLink Project File to "C:\Keil\ARM\Device\Nordic\nrf51822\Board\nrf6310\s110\zb-ca1008\arm\JLinkSettings.ini"
+* JLink Info: Device "NRF51822_XXAA" selected (257 KB flash, 16 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.76d, compiled Sep 13 2013 16:35:06
+Firmware: J-Link Lite-Cortex-M V8 compiled Aug 29 2012 15:24:23
+Hardware: V8.00
+S/N : 518002570 
+Feature(s) : GDB 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BB11477
+* JLink Info: Found Cortex-M0 r0p0, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: nRF51822_xxAA
+VTarget = 3.002V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Erase Done.
+Programming Done.
+Verify OK.
+Application running ...

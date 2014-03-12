@@ -51,17 +51,17 @@
 
 
 ///////////////////////////////////////////////PINOUT REF TO ZB-CA1008
-#define BUTTON_W		29// WAKEUP/LOCK BUTTON
+#define BUTTON_W        29// WAKEUP/LOCK BUTTON
 
-#define TOUCH_INT		7
+#define TOUCH_INT       7
 
-//#define ACCEL_DEN_G		12
-#define ACCEL_DRDY_INT2_G		11
-#define ACCEL_INT1_G		10
-#define ACCEL_INT1_A		8
-#define ACCEL_INT2_A		9
+//#define ACCEL_DEN_G       12
+#define ACCEL_DRDY_INT2_G       11
+#define ACCEL_INT1_G        10
+#define ACCEL_INT1_A        8
+#define ACCEL_INT2_A        9
 
-#define OLED_RST		14
+#define OLED_RST        14
 
 #define BUZZER      17
 #define BUZZER2      18
@@ -69,8 +69,8 @@
 #define BAT_STATUS      28
 #define BAT_LVL      //AIN2
 
-#define I2C_SDA		16
-#define I2C_SCL		15
+#define I2C_SDA     16
+#define I2C_SCL     15
 ///////////////////////////////////////////////PINOUT-END
 
 #define DEVICE_NAME                          "ZEBE-1009"                               /**< Name of device. Will be included in the advertising data. */
@@ -199,6 +199,58 @@
 #define img_init 4
 
 
+
+// MPR121 Register Defines
+#define MHD_R	0x2B
+#define NHD_R	0x2C
+#define	NCL_R 	0x2D
+#define	FDL_R	0x2E
+#define	MHD_F	0x2F
+#define	NHD_F	0x30
+#define	NCL_F	0x31
+#define	FDL_F	0x32
+#define	ELE0_T	0x41
+#define	ELE0_R	0x42
+#define	ELE1_T	0x43
+#define	ELE1_R	0x44
+#define	ELE2_T	0x45
+#define	ELE2_R	0x46
+#define	ELE3_T	0x47
+#define	ELE3_R	0x48
+#define	ELE4_T	0x49
+#define	ELE4_R	0x4A
+#define	ELE5_T	0x4B
+#define	ELE5_R	0x4C
+#define	ELE6_T	0x4D
+#define	ELE6_R	0x4E
+#define	ELE7_T	0x4F
+#define	ELE7_R	0x50
+#define	ELE8_T	0x51
+#define	ELE8_R	0x52
+#define	ELE9_T	0x53
+#define	ELE9_R	0x54
+#define	ELE10_T	0x55
+#define	ELE10_R	0x56
+#define	ELE11_T	0x57
+#define	ELE11_R	0x58
+#define	FIL_CFG	0x5D
+#define	ELE_CFG	0x5E
+#define GPIO_CTRL0	0x73
+#define	GPIO_CTRL1	0x74
+#define GPIO_DATA	0x75
+#define	GPIO_DIR	0x76
+#define	GPIO_EN		0x77
+#define	GPIO_SET	0x78
+#define	GPIO_CLEAR	0x79
+#define	GPIO_TOGGLE	0x7A
+#define	ATO_CFG0	0x7B
+#define	ATO_CFGU	0x7D
+#define	ATO_CFGL	0x7E
+#define	ATO_CFGT	0x7F
+
+// Global Constants
+#define TOU_THRESH	50
+#define	REL_THRESH	15
 
 
 static uint16_t                              m_conn_handle = BLE_CONN_HANDLE_INVALID;   /**< Handle of the current connection. */
@@ -387,7 +439,7 @@ static bool twi_master_read(uint8_t *data, uint8_t data_length, bool issue_stop_
         /* gently return false for requesting data of size 0 */
         return false;
     }
-		
+        
     if (data_length == 1)
     {
         NRF_PPI->CH[0].TEP = (uint32_t)&NRF_TWI1->TASKS_STOP;
@@ -489,174 +541,288 @@ bool twi_master_transfer(uint8_t address, uint8_t *data, uint16_t data_length, b
     return transfer_succeeded;
 }
 
+void TOUCH_init(void)
+{
+	
+	// Init sequence for touch controller MPR121
+			
+
+
+	// This group controls filtering when data is > baseline.	
+	uint8_t frame[2]={MHD_R,0x01};
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	frame[0]=NHD_R;
+	frame[1]=0x01;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+
+	frame[0]=NCL_R;
+	frame[1]=0x00;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	frame[0]=FDL_R;
+	frame[1]=0x00;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+
+	
+		// Section B
+	// This group controls filtering when data is < baseline.
+	
+	frame[0]=MHD_F;
+	frame[1]=0x01;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	frame[0]=NHD_F;
+	frame[1]=0x01;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	frame[0]=NCL_F;
+	frame[1]=0xFF;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	frame[0]=FDL_F;
+	frame[1]=0x02;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);
+	
+	
+	// Section C
+	// This group sets touch and release thresholds for each electrode
+	
+	
+	frame[0]=ELE4_T;
+	frame[1]=TOU_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE4_R;
+	frame[1]=REL_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE5_T;
+	frame[1]=TOU_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE5_R;
+	frame[1]=REL_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE6_T;
+	frame[1]=TOU_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE6_R;
+	frame[1]=REL_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE7_T;
+	frame[1]=TOU_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+	
+	frame[0]=ELE7_R;
+	frame[1]=REL_THRESH;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);	
+		
+
+	
+	// Section D
+	// Set the Filter Configuration
+	// Set ESI2
+
+	frame[0]=FIL_CFG;
+	frame[1]=0x04;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);		
+	
+	
+	// Section E
+	// Electrode Configuration
+	// Enable 6 Electrodes and set to run mode
+	// Set ELE_CFG to 0x00 to return to standby mode
+	// mpr121Write(ELE_CFG, 0x0C);	// Enables all 12 Electrodes
+	
+	
+	frame[0]=ELE_CFG;
+	frame[1]=0x08;
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, true);		
+	
+	
+	// Section F
+	// Enable Auto Config and auto Reconfig
+	/*mpr121Write(ATO_CFG0, 0x0B);
+	mpr121Write(ATO_CFGU, 0xC9);	// USL = (Vdd-0.7)/vdd*256 = 0xC9 @3.3V
+	mpr121Write(ATO_CFGL, 0x82);	// LSL = 0.65*USL = 0x82 @3.3V
+	mpr121Write(ATO_CFGT, 0xB5);*/	// Target = 0.9*USL = 0xB5 @3.3V
+			
+	
+
+}
 
 void twi_oled_write(uint8_t *data)
 {
-	
-	
-	  if (twi_master_clear_bus())
+    
+    
+      if (twi_master_clear_bus())
     {
         NRF_TWI1->ADDRESS = (ADDR_OLED_W >> 1);
 
-		
-			uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for EVENTS_TXDSENT event*/
-			uint8_t data_length=17;
+        
+            uint32_t timeout = MAX_TIMEOUT_LOOPS;   /* max loops to wait for EVENTS_TXDSENT event*/
+            uint8_t data_length=17;
 
-			if(data_length == 17)
-			{
-					NRF_TWI1->TXD = 0x40;
-			}
-			else
-			{
-					NRF_TWI1->TXD = *data++;
-			}
-			
-			NRF_TWI1->TASKS_STARTTX = 1;
+            if(data_length == 17)
+            {
+                    NRF_TWI1->TXD = 0x40;
+            }
+            else
+            {
+                    NRF_TWI1->TXD = *data++;
+            }
+            
+            NRF_TWI1->TASKS_STARTTX = 1;
 
-			while (true)
-			{
-					while(NRF_TWI1->EVENTS_TXDSENT == 0 && (--timeout))
-					{
-					}
+            while (true)
+            {
+                    while(NRF_TWI1->EVENTS_TXDSENT == 0 && (--timeout))
+                    {
+                    }
 
-					if (timeout == 0)
-					{
-							NRF_TWI1->EVENTS_STOPPED = 0; 
-							NRF_TWI1->TASKS_STOP = 1; 
-							/* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
-							while(NRF_TWI1->EVENTS_STOPPED == 0) 
-							{ 
-							}
-							/* timeout before receiving event*/
+                    if (timeout == 0)
+                    {
+                            NRF_TWI1->EVENTS_STOPPED = 0; 
+                            NRF_TWI1->TASKS_STOP = 1; 
+                            /* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+                            while(NRF_TWI1->EVENTS_STOPPED == 0) 
+                            { 
+                            }
+                            /* timeout before receiving event*/
 
-					}
+                    }
 
 
-					--data_length;
-					
-					NRF_TWI1->EVENTS_TXDSENT = 0;
-					if (data_length == 0)
-					{
-							break;
-					}
+                    --data_length;
+                    
+                    NRF_TWI1->EVENTS_TXDSENT = 0;
+                    if (data_length == 0)
+                    {
+                            break;
+                    }
 
-					NRF_TWI1->TXD = *data++;
-			}
-			
-	 
-					NRF_TWI1->EVENTS_STOPPED = 0; 
-					NRF_TWI1->TASKS_STOP = 1; 
-					/* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
-					while(NRF_TWI1->EVENTS_STOPPED == 0) 
-					{ 
-					} 
+                    NRF_TWI1->TXD = *data++;
+            }
+            
+     
+                    NRF_TWI1->EVENTS_STOPPED = 0; 
+                    NRF_TWI1->TASKS_STOP = 1; 
+                    /* wait until stop sequence is sent and clear the EVENTS_STOPPED */ 
+                    while(NRF_TWI1->EVENTS_STOPPED == 0) 
+                    { 
+                    } 
 
-		}
+        }
 }
 
 void OLED_clear(void) 
 {
-		for (uint8_t i=1; i<65; i++) {
-			twi_oled_write(buffer_ff);			
-	}
+        for (uint8_t i=1; i<65; i++) {
+            twi_oled_write(buffer_ff);          
+    }
 }
 
 void OLED_display(uint8_t what) 
 {
-	/*
-		*/
-	uint8_t framek[7]={
-		0x00,SSD1306_MEMORYMODE,0x00,
-		0x00,SSD1306_COLUMNADDR,32,95
-	};
-	twi_master_transfer(ADDR_OLED_W, framek, 7, true);
-	
-	
-	if(what==img_bt_advertise)
-	{
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q5);
-		twi_oled_write(buffer_bt_q6);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q9);
-		twi_oled_write(buffer_bt_q10);
-		twi_oled_write(buffer_bt_q11);
-		twi_oled_write(buffer_bt_q12);
-		twi_oled_write(buffer_bt_q13);
-		twi_oled_write(buffer_bt_q14);
-		twi_oled_write(buffer_bt_q15);
-		twi_oled_write(buffer_bt_q16);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q18);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q20);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-	}
-	else if(what==img_bt_connected)
-	{
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q5);
-		twi_oled_write(buffer_bt_q6);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q9);
-		twi_oled_write(buffer_bt_q10);
-		twi_oled_write(buffer10on);
-		twi_oled_write(buffer11on);
-		twi_oled_write(buffer_bt_q13);
-		twi_oled_write(buffer_bt_q14);
-		twi_oled_write(buffer14on);
-		twi_oled_write(buffer15on);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q18);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q20);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);	
-	}
-	else if(what==img_bt_disconnected)
-	{
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q5);
-		twi_oled_write(buffer_bt_q6);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q9);
-		twi_oled_write(buffer_bt_q10);
-		twi_oled_write(buffer_bt_q12);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q13);
-		twi_oled_write(buffer_bt_q14);
-		twi_oled_write(buffer_bt_q16);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q18);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_bt_q20);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-		twi_oled_write(buffer_ff);
-	}
-		for (uint8_t i=1; i<9; i++) {
-			twi_oled_write(buffer_ff);			
-	}
-	
+    /*
+        */
+    uint8_t framek[7]={
+        0x00,SSD1306_MEMORYMODE,0x00,
+        0x00,SSD1306_COLUMNADDR,32,95
+    };
+    twi_master_transfer(ADDR_OLED_W, framek, 7, true);
+    
+    
+    if(what==img_bt_advertise)
+    {
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q5);
+        twi_oled_write(buffer_bt_q6);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q9);
+        twi_oled_write(buffer_bt_q10);
+        twi_oled_write(buffer_bt_q11);
+        twi_oled_write(buffer_bt_q12);
+        twi_oled_write(buffer_bt_q13);
+        twi_oled_write(buffer_bt_q14);
+        twi_oled_write(buffer_bt_q15);
+        twi_oled_write(buffer_bt_q16);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q18);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q20);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+    }
+    else if(what==img_bt_connected)
+    {
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q5);
+        twi_oled_write(buffer_bt_q6);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q9);
+        twi_oled_write(buffer_bt_q10);
+        twi_oled_write(buffer10on);
+        twi_oled_write(buffer11on);
+        twi_oled_write(buffer_bt_q13);
+        twi_oled_write(buffer_bt_q14);
+        twi_oled_write(buffer14on);
+        twi_oled_write(buffer15on);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q18);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q20);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);  
+    }
+    else if(what==img_bt_disconnected)
+    {
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q5);
+        twi_oled_write(buffer_bt_q6);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q9);
+        twi_oled_write(buffer_bt_q10);
+        twi_oled_write(buffer_bt_q12);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q13);
+        twi_oled_write(buffer_bt_q14);
+        twi_oled_write(buffer_bt_q16);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q18);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_bt_q20);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+        twi_oled_write(buffer_ff);
+    }
+        for (uint8_t i=1; i<9; i++) {
+            twi_oled_write(buffer_ff);          
+    }
+    
 }
 
 
@@ -669,8 +835,8 @@ static void advertising_start(void)
     err_code = sd_ble_gap_adv_start(&m_adv_params);
     APP_ERROR_CHECK(err_code);
 
-		OLED_display(img_bt_advertise);
-		
+        OLED_display(img_bt_advertise);
+        
 
 }
 
@@ -726,14 +892,14 @@ static void battery_level_update(void)
     uint8_t  battery_level;
 
     ///battery_level = (uint8_t)ble_sensorsim_measure(&m_battery_sim_state, &m_battery_sim_cfg);
-		battery_level = 212;
+        battery_level = 212;
 
     err_code = ble_bas_battery_level_update(&m_bas, battery_level);
     if ((err_code != NRF_SUCCESS) &&
         (err_code != NRF_ERROR_INVALID_STATE) &&
         (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
         (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-			 )
+             )
     {
         APP_ERROR_HANDLER(err_code);
     }
@@ -776,7 +942,7 @@ static void heart_rate_meas_timeout_handler(void * p_context)
         (err_code != NRF_ERROR_INVALID_STATE) &&
         (err_code != BLE_ERROR_NO_TX_BUFFERS) &&
         (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-				)
+                )
     {
         APP_ERROR_HANDLER(err_code);
     }
@@ -882,7 +1048,7 @@ static void gap_params_init(void)
                                           strlen(DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
 
-    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_HEART_RATE_SENSOR_HEART_RATE_BELT);
+    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_GENERIC_WATCH);
     APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
@@ -917,6 +1083,7 @@ static void advertising_init(void)
         {BLE_UUID_HEART_RATE_SERVICE,         BLE_UUID_TYPE_BLE},
         {BLE_UUID_BATTERY_SERVICE,            BLE_UUID_TYPE_BLE},
         {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
+		
     };
 
     // Build and set advertising data.
@@ -1139,8 +1306,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             break;
 
-						case BLE_GAP_EVT_DISCONNECTED:
-					
+                        case BLE_GAP_EVT_DISCONNECTED:
+                    
             OLED_display(img_bt_disconnected);
 
 
@@ -1165,7 +1332,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_TIMEOUT:
             if (p_ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT)
             {
-								OLED_display(img_bt_disconnected);
+                                OLED_display(img_bt_disconnected);
 
                 // Go to system-off mode (this function will not return; wakeup will cause a reset).
                 err_code = sd_power_system_off();
@@ -1279,63 +1446,63 @@ static void power_manage(void)
 
 
 void OLED_invertDisplay(bool i) {
-	uint8_t frame[2]={0x00,0x00};
-	
+    uint8_t frame[2]={0x00,0x00};
+    
   if (i) {
-		frame[1]=(SSD1306_INVERTDISPLAY);
+        frame[1]=(SSD1306_INVERTDISPLAY);
   } else {
-		frame[1]=(SSD1306_NORMALDISPLAY);
+        frame[1]=(SSD1306_NORMALDISPLAY);
   }
-	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
-	
+    twi_master_transfer(ADDR_OLED_W, frame, 2, true);
+    
 }
 
 void OLED_init(void)
 {
-	
-	// Init sequence for 64x48 OLED module
-			
-	uint8_t frame[51]={
-	0x00,SSD1306_DISPLAYOFF,
-	0x00,SSD1306_SETDISPLAYCLOCKDIV,0x80,
-	0x00,SSD1306_SETMULTIPLEX,0x2F,
-	0x00,SSD1306_SETDISPLAYOFFSET,0,
-	0x00,SSD1306_SETSTARTLINE | 0x0,//////good
-	0x00,SSD1306_CHARGEPUMP,0x14,
-	0x00,SSD1306_MEMORYMODE,0x00,
-	0x00,SSD1306_SEGREMAP | 0x1,
-	0x00,SSD1306_COMSCANDEC, 0xC8,////////////////
-	0x00,SSD1306_SETCOMPINS,0x12,
-	0x00,SSD1306_SETCONTRAST,0xCF,
-	0x00,SSD1306_SETPRECHARGE,0x22,
-	0x00,SSD1306_SETVCOMDETECT,0x00,
-	0x00,SSD1306_DISPLAYALLON_RESUME,
-	0x00,SSD1306_NORMALDISPLAY,
-	0x00,SSD1306_DISPLAYON
-	};
-	
-	
-		// Setup reset pin direction (used by both SPI and I2C)  
-		nrf_gpio_pin_set(OLED_RST);
+    
+    // Init sequence for 64x48 OLED module
+            
+    uint8_t frame[51]={
+    0x00,SSD1306_DISPLAYOFF,
+    0x00,SSD1306_SETDISPLAYCLOCKDIV,0x80,
+    0x00,SSD1306_SETMULTIPLEX,0x2F,
+    0x00,SSD1306_SETDISPLAYOFFSET,0,
+    0x00,SSD1306_SETSTARTLINE | 0x0,//////good
+    0x00,SSD1306_CHARGEPUMP,0x14,
+    0x00,SSD1306_MEMORYMODE,0x00,
+    0x00,SSD1306_SEGREMAP | 0x1,
+    0x00,SSD1306_COMSCANDEC, 0xC8,////////////////
+    0x00,SSD1306_SETCOMPINS,0x12,
+    0x00,SSD1306_SETCONTRAST,0xCF,
+    0x00,SSD1306_SETPRECHARGE,0x22,
+    0x00,SSD1306_SETVCOMDETECT,0x00,
+    0x00,SSD1306_DISPLAYALLON_RESUME,
+    0x00,SSD1306_NORMALDISPLAY,
+    0x00,SSD1306_DISPLAYON
+    };
+    
+    
+        // Setup reset pin direction (used by both SPI and I2C)  
+        nrf_gpio_pin_set(OLED_RST);
 
-		// VDD (3.3V) goes high at start, lets just chill for a ms
-		nrf_delay_us(1000);
-		// bring reset low
-		nrf_gpio_pin_clear(OLED_RST);
-		// wait 10ms
-		nrf_delay_us(1000);
-		// bring out of reset
-		nrf_gpio_pin_set(OLED_RST);
-		// turn on VCC (9V?)
-	
-		nrf_delay_us(100);
+        // VDD (3.3V) goes high at start, lets just chill for a ms
+        nrf_delay_us(1000);
+        // bring reset low
+        nrf_gpio_pin_clear(OLED_RST);
+        // wait 10ms
+        nrf_delay_us(1000);
+        // bring out of reset
+        nrf_gpio_pin_set(OLED_RST);
+        // turn on VCC (9V?)
+    
+        nrf_delay_us(100);
 
-	twi_master_transfer(ADDR_OLED_W, frame, 51, true);
-	
-	
-	OLED_invertDisplay(true);
-	
-	OLED_clear();
+    twi_master_transfer(ADDR_OLED_W, frame, 51, true);
+    
+    
+    OLED_invertDisplay(true);
+    
+    OLED_clear();
 
 
 }
@@ -1349,19 +1516,19 @@ void OLED_init(void)
 // display.scrollright(0x00, 0x0F) 
 void OLED_startscrollright(uint8_t start, uint8_t stop){
 
-	uint8_t frame[16]={
-		0x00,SSD1306_RIGHT_HORIZONTAL_SCROLL,
-		0x00,0x00,
-		0x00,start,
-		0x00,0x00,
-		0x00,stop,
-		0x00,0x00,
-		0x00,0xFF,
-		0x00,SSD1306_ACTIVATE_SCROLL
-	};
+    uint8_t frame[16]={
+        0x00,SSD1306_RIGHT_HORIZONTAL_SCROLL,
+        0x00,0x00,
+        0x00,start,
+        0x00,0x00,
+        0x00,stop,
+        0x00,0x00,
+        0x00,0xFF,
+        0x00,SSD1306_ACTIVATE_SCROLL
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 16, true);
-	
+    twi_master_transfer(ADDR_OLED_W, frame, 16, true);
+    
 }
 
 // startscrollleft
@@ -1369,19 +1536,19 @@ void OLED_startscrollright(uint8_t start, uint8_t stop){
 // Hint, the display is 16 rows tall. To scroll the whole display, run:
 // display.scrollright(0x00, 0x0F) 
 void OLED_startscrollleft(uint8_t start, uint8_t stop){
-	
-		uint8_t frame[16]={
-		0x00,SSD1306_LEFT_HORIZONTAL_SCROLL,
-		0x00,0x00,
-		0x00,start,
-		0x00,0x00,
-		0x00,stop,
-		0x00,0x00,
-		0x00,0xFF,
-		0x00,SSD1306_ACTIVATE_SCROLL
-	};
+    
+        uint8_t frame[16]={
+        0x00,SSD1306_LEFT_HORIZONTAL_SCROLL,
+        0x00,0x00,
+        0x00,start,
+        0x00,0x00,
+        0x00,stop,
+        0x00,0x00,
+        0x00,0xFF,
+        0x00,SSD1306_ACTIVATE_SCROLL
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 16, true);
+    twi_master_transfer(ADDR_OLED_W, frame, 16, true);
 
 }
 
@@ -1390,22 +1557,22 @@ void OLED_startscrollleft(uint8_t start, uint8_t stop){
 // Hint, the display is 16 rows tall. To scroll the whole display, run:
 // display.scrollright(0x00, 0x0F) 
 void OLED_startscrolldiagright(uint8_t start, uint8_t stop){
-	
-	uint8_t frame[22]={
-		0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
-		0x00,0x00,
-		0x00,OLED_HEIGHT,
-		0x00,SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL,
-		0x00,0x00,
-		0x00,start,
-		0x00,0x00,
-		0x00,stop,
-		0x00,0x01,
-		0x00,SSD1306_ACTIVATE_SCROLL
-	};
+    
+    uint8_t frame[22]={
+        0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
+        0x00,0x00,
+        0x00,OLED_HEIGHT,
+        0x00,SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL,
+        0x00,0x00,
+        0x00,start,
+        0x00,0x00,
+        0x00,stop,
+        0x00,0x01,
+        0x00,SSD1306_ACTIVATE_SCROLL
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 22, true);
-	
+    twi_master_transfer(ADDR_OLED_W, frame, 22, true);
+    
 }
 
 // startscrolldiagleft
@@ -1414,33 +1581,33 @@ void OLED_startscrolldiagright(uint8_t start, uint8_t stop){
 // display.scrollright(0x00, 0x0F) 
 void OLED_startscrolldiagleft(uint8_t start, uint8_t stop){
 
-	
-		uint8_t frame[22]={
-		0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
-		0x00,0x00,
-		0x00,OLED_HEIGHT,
-		0x00,SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL,
-		0x00,0x00,
-		0x00,start,
-		0x00,0x00,
-		0x00,stop,
-		0x00,0x01,
-		0x00,SSD1306_ACTIVATE_SCROLL
-	};
+    
+        uint8_t frame[22]={
+        0x00,SSD1306_SET_VERTICAL_SCROLL_AREA,
+        0x00,0x00,
+        0x00,OLED_HEIGHT,
+        0x00,SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL,
+        0x00,0x00,
+        0x00,start,
+        0x00,0x00,
+        0x00,stop,
+        0x00,0x01,
+        0x00,SSD1306_ACTIVATE_SCROLL
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 22, true);
-	
+    twi_master_transfer(ADDR_OLED_W, frame, 22, true);
+    
 
 }
 
 void OLED_stopscroll(void){
-	
-	uint8_t frame[2]={
-		0x00,SSD1306_DEACTIVATE_SCROLL
-	};
+    
+    uint8_t frame[2]={
+        0x00,SSD1306_DEACTIVATE_SCROLL
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 2, true);
-	
+    twi_master_transfer(ADDR_OLED_W, frame, 2, true);
+    
 }
 
 // Dim the display
@@ -1456,13 +1623,12 @@ void OLED_dim(bool dim) {
   }
   // the range of contrast to too small to be really useful
   // it is useful to dim the display
-	
-	uint8_t frame[4]={
-		0x00,SSD1306_SETCONTRAST,
-		0x00,contrast	
-	};
+    
+    uint8_t frame[3]={
+        0x00,SSD1306_SETCONTRAST,contrast   
+    };
 
-	twi_master_transfer(ADDR_OLED_W, frame, 4, true);
+    twi_master_transfer(ADDR_OLED_W, frame, 3, true);
 
 }
 
@@ -1471,84 +1637,84 @@ void OLED_dim(bool dim) {
 static void GPIO_init(void)
 {
 
-	NRF_GPIO->PIN_CNF[BUTTON_W] = 
-															(GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);	
-	/*		
-	NRF_GPIO->PIN_CNF[ACCEL_DEN_G] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);		
-	*/		
-			
-	NRF_GPIO->PIN_CNF[ACCEL_DRDY_INT2_G] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);			
+    NRF_GPIO->PIN_CNF[BUTTON_W] = 
+                                                            (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);   
+    /*      
+    NRF_GPIO->PIN_CNF[ACCEL_DEN_G] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);      
+    */      
+            
+    NRF_GPIO->PIN_CNF[ACCEL_DRDY_INT2_G] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);           
 
-	NRF_GPIO->PIN_CNF[ACCEL_INT1_G] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
-		
-	NRF_GPIO->PIN_CNF[ACCEL_INT1_A] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+    NRF_GPIO->PIN_CNF[ACCEL_INT1_G] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);       
+        
+    NRF_GPIO->PIN_CNF[ACCEL_INT1_A] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);       
 
-	NRF_GPIO->PIN_CNF[ACCEL_INT2_A] =
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
-		
-	NRF_GPIO->PIN_CNF[ACCEL_INT2_A] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);		
+    NRF_GPIO->PIN_CNF[ACCEL_INT2_A] =
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);       
+        
+    NRF_GPIO->PIN_CNF[ACCEL_INT2_A] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);       
 
 
-	NRF_GPIO->PIN_CNF[BUZZER] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
-															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
-															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
-															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
-															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+    NRF_GPIO->PIN_CNF[BUZZER] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+                                                            | (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+                                                            | (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+                                                            | (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+                                                            | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
 
-	NRF_GPIO->PIN_CNF[BUZZER2] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
-															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
-															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
-															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
-															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
-																							
-	NRF_GPIO->PIN_CNF[OLED_RST] = 
-															(GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
-															| (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
-															| (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
-															| (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
-															| (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+    NRF_GPIO->PIN_CNF[BUZZER2] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+                                                            | (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+                                                            | (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+                                                            | (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+                                                            | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
+                                                                                            
+    NRF_GPIO->PIN_CNF[OLED_RST] = 
+                                                            (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)
+                                                            | (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)
+                                                            | (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos)
+                                                            | (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)
+                                                            | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos);
 
-	NRF_GPIO->PIN_CNF[BAT_STATUS] = 
-															(GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
-															(GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
-															(GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
-															(GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
-															(GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);	
+    NRF_GPIO->PIN_CNF[BAT_STATUS] = 
+                                                            (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos)| 
+                                                            (GPIO_PIN_CNF_DRIVE_H0S1 << GPIO_PIN_CNF_DRIVE_Pos)| 
+                                                            (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos)| 
+                                                            (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos)| 
+                                                            (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos);   
 
 
 
@@ -1557,8 +1723,8 @@ static void GPIO_init(void)
 #define BAT_LVL      //AIN2
 
 */
-		
-		
+        
+        
 }
 
 
@@ -1569,11 +1735,17 @@ int main(void)
 {
     // Initialize.
   GPIO_init();
-	twi_master_init();
-	OLED_init();
-
-	
-
+  twi_master_init();
+  OLED_init();
+	TOUCH_init();
+    
+		
+	uint8_t frame[1]={0x00};
+	uint8_t rxdata[1]={0x22};
+	/*
+	twi_master_transfer(ADDR_TOUCH_W, frame, 2, false);
+	twi_master_transfer(ADDR_TOUCH_R, rxdata, 1, true);
+	*/
 
 
   ble_stack_init();
@@ -1593,16 +1765,13 @@ int main(void)
 
 
 
-
-
 // Enter main loop.
     for (;;)
     {
         power_manage();
     }
-		
-		
-		
+        
+        
 }
 
 
