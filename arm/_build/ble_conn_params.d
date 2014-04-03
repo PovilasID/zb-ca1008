@@ -17,9 +17,9 @@
 .\_build\ble_conn_params.o: ..\..\..\..\..\Include\app_common\app_util.h
 .\_build\ble_conn_params.o: ..\..\..\..\..\Include\compiler_abstraction.h
 .\_build\ble_conn_params.o: ..\..\..\..\..\Include\nrf51.h
-.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cm0.h
-.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmInstr.h
-.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmFunc.h
+.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cm0.h
+.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmInstr.h
+.\_build\ble_conn_params.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmFunc.h
 .\_build\ble_conn_params.o: ..\..\..\..\..\Include\system_nrf51.h
 .\_build\ble_conn_params.o: ..\..\..\..\..\Include\app_common\app_error.h
 .\_build\ble_conn_params.o: C:\Keil\ARM\ARMCC\bin\..\include\stdlib.h

@@ -1613,9 +1613,9 @@ void OLED_stopscroll(void){
 // Dim the display
 // dim = true: display is dimmed
 // dim = false: display is normal
-void OLED_dim(bool dim) {
-  uint8_t contrast;
-
+void OLED_dim(uint8_t contrast) {
+///  uint8_t contrast;
+/*
   if (dim) {
     contrast = 0; // Dimmed display
   } else {
@@ -1623,7 +1623,7 @@ void OLED_dim(bool dim) {
   }
   // the range of contrast to too small to be really useful
   // it is useful to dim the display
-    
+ */   
     uint8_t frame[3]={
         0x00,SSD1306_SETCONTRAST,contrast   
     };
@@ -1758,9 +1758,16 @@ int main(void)
   conn_params_init();
   sec_params_init();
 
+
+
+OLED_invertDisplay(0);
+
     // Start execution.
   application_timers_start();
   advertising_start();
+
+
+	OLED_dim(0x00);
 
 
 

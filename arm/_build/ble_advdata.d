@@ -17,9 +17,9 @@
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\app_common\app_util.h
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\compiler_abstraction.h
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\nrf51.h
-.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cm0.h
-.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmInstr.h
-.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmFunc.h
+.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cm0.h
+.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmInstr.h
+.\_build\ble_advdata.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmFunc.h
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\system_nrf51.h
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\app_common\app_error.h
 .\_build\ble_advdata.o: ..\..\..\..\..\Include\nordic_common.h

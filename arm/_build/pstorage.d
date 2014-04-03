@@ -7,12 +7,12 @@
 .\_build\pstorage.o: ..\..\..\..\..\Include\nrf_assert.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\nrf.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\nrf51.h
-.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cm0.h
-.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmInstr.h
-.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cmFunc.h
+.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cm0.h
+.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmInstr.h
+.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cmFunc.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\system_nrf51.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\nrf51_bitfields.h
-.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include\core_cm0.h
+.\_build\pstorage.o: C:\Keil\ARM\PACK\ARM\CMSIS\3.20.3\CMSIS\Include\core_cm0.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\nrf51_deprecated.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\compiler_abstraction.h
 .\_build\pstorage.o: ..\..\..\..\..\Include\s110\nrf_soc.h
